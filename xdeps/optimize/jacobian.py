@@ -46,7 +46,10 @@ class JacobianSolver:
 
             self._step += 1
 
-            # test penalty
+            # test penalty (a Jacobian is computed at this point below: hint the merit
+            # so it can prepare a derivative-bearing evaluation rather than value-only)
+            if hasattr(myf, 'notify_jacobian_point'):
+                myf.notify_jacobian_point(True)
             y, penalty = self.eval(self.x) # will need to handle mask
             self.penalty_before_last_step = penalty
             self.penalty_after_last_step = penalty
@@ -121,7 +124,9 @@ class JacobianSolver:
                         this_xstep = this_xstep * (self.x[ii] - limits[ii][1]) / this_xstep[ii]
                         mask_hit_limit[ii] = True
 
-                # Eval function at substep
+                # Eval function at substep (line search: value only, no Jacobian here)
+                if hasattr(myf, 'notify_jacobian_point'):
+                    myf.notify_jacobian_point(False)
                 y, newpen = self.eval(self.x - this_xstep)
 
                 if self.verbose:
@@ -138,7 +143,9 @@ class JacobianSolver:
             if (self.error_on_penalty_increase
                     and newpen > penalty * self.error_on_penalty_increase):
 
-                # Put things back
+                # Put things back (value only)
+                if hasattr(myf, 'notify_jacobian_point'):
+                    myf.notify_jacobian_point(False)
                 self.eval(self.x)
 
                 raise ValueError(
